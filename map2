@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Portfolio Exposure Map</title>
+
+  <style>
+    html, body, #windy {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    .popup-title {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .popup-row {
+      margin-bottom: 3px;
+    }
+
+    .legend {
+      background: white;
+      padding: 10px;
+      line-height: 20px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.25);
+      font-size: 12px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+  </style>
+
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+  <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
+</head>
+
+<body>
+  <div id="windy"></div>
+
+  <script>
+    const options = {
+      key: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      lat: 39.5,
+      lon: -98.35,
+      zoom: 4,
+      overlay: 'wind',
+      product: 'gfs',
+      level: 'surface'
+    };
+
+    const locations = [
+      {
+        insured_name: 'ABC Construction',
+        lat: 32.7767,
+        lng: -96.7970,
+        premium: 18750,
+        product_name: 'Contractor Equipment',
+        brokerage_name: 'Example Brokerage'
+      },
+      {
+        insured_name: 'XYZ Rentals',
+        lat: 29.7604,
+        lng: -95.3698,
+        premium: 42200,
+        product_name: 'Inland Marine',
+        brokerage_name: 'Example Brokerage'
+      },
+      {
+        insured_name: 'North East Builders',
+        lat: 40.7128,
+        lng: -74.0060,
+        premium: 28750,
+        product_name: 'Builders Risk',
+        brokerage_name: 'Example Brokerage'
+      }
+    ];
+
+    function formatCurrency(value) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+
+      return Number(value).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      });
+    }
+
+    function getPremiumColor(premium) {
+      if (premium >= 50000) return '#d73027'; // red
+      if (premium >= 25000) return '#fc8d59'; // orange
+      if (premium >= 10000) return '#fee08b'; // yellow
+      return '#1a9850';                       // green
+    }
+
+    function getPremiumRadius(premium) {
+      if (premium >= 100000) return 18;
+      if (premium >= 50000) return 14;
+      if (premium >= 25000) return 11;
+      if (premium >= 10000) return 8;
+      return 6;
+    }
+
+    windyInit(options, windyAPI => {
+      const { map } = windyAPI;
+
+      locations.forEach(loc => {
+        L.circleMarker([loc.lat, loc.lng], {
+          radius: getPremiumRadius(loc.premium),
+          color: getPremiumColor(loc.premium),
+          fillColor: getPremiumColor(loc.premium),
+          fillOpacity: 0.85,
+          weight: 2
+        })
+        .addTo(map)
+        .bindPopup(`
+          <div class="popup-title">${loc.insured_name}</div>
+          <div class="popup-row"><b>Premium:</b> ${formatCurrency(loc.premium)}</div>
+          <div class="popup-row"><b>Product:</b> ${loc.product_name}</div>
+          <div class="popup-row"><b>Brokerage:</b> ${loc.brokerage_name}</div>
+        `);
+      });
+
+      const legend = L.control({ position: 'bottomright' });
+
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+
+        div.innerHTML = `
+          <b>Premium Exposure</b><br>
+          <span class="legend-dot" style="background:#1a9850"></span> Under $10k<br>
+          <span class="legend-dot" style="background:#fee08b"></span> $10k - $25k<br>
+          <span class="legend-dot" style="background:#fc8d59"></span> $25k - $50k<br>
+          <span class="legend-dot" style="background:#d73027"></span> $50k+
+        `;
+
+        return div;
+      };
+
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>
